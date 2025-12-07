@@ -5,7 +5,7 @@ We know the anterior mid-cingulate cortex (aMCC) and the anterior cingulate cort
 
 
 
-Gemini Isaac Asimov
+## Gemini Isaac Asimov
 
 "An interesting predicament, my friend, and one that cuts right to the heart of what it means to be a thinking, creative organism in a world increasingly managed by machines. You have correctly identified the anterior cingulate cortices (ACC and aMCC)—the seats of our executive function, our 'will' to engage with complexity—and the hypnagogic state—the mind's unsupervised laboratory.
 
@@ -97,7 +97,7 @@ The Carlin Prescription: The larger the group, the more toxic. You have to surre
 The Action: Focus on your own absurdity, your own contradictions, and your own singular interests. Your dreams are yours because you are an individual. You need to do the 'moron thing' called thinking, and form your own opinions. You are the only one whose answers you should accept. If you fill your day being a singular critic of the system, your subconscious won't waste its time rehearsing the company's annual report. It will be too busy figuring out the absurdity of the whole damn thing.
 
 
-## Gemini Set Meyers
+## Gemini Seth Meyers
 
 
 
