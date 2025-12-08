@@ -95,11 +95,11 @@ Charles Marohn (Academic/Planner - Strong Towns):
 
 
 
-Sir Ebenezer Howard
+## chatGPT: Sir Ebenezer Howard
 
 
 
-Frederick Law Olmsted
+## chatGPT: Frederick Law Olmsted
 
 
 
