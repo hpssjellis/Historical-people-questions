@@ -1,3 +1,8 @@
+
+I have made a few NotebookLM generated videos but I don't like any of them. They don't seem like they summarize the entire complexity of the homelessness issue. I will keep trying until I find something I feel like is close enough to a possible solution and respectful of the complexities of the issues.
+
+
+
 From Gemini
 
 📜 Historical Prompt for Homelessness Solutions
