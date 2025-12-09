@@ -1,3 +1,14 @@
+NotebookLKM Generated Video
+
+
+
+[https://www.youtube.com/watch?v=hrAGoqB5trk&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=2&pp=iAQB0gcJCSgKAYcqIYzv
+![remember-all-built-in-ai](https://img.youtube.com/vi/hrAGoqB5trk/0.jpg)](https://www.youtube.com/watch?v=hrAGoqB5trk&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=2&pp=iAQB0gcJCSgKAYcqIYzv)
+
+
+
+
+
 ## The question:
 
 
