@@ -1,3 +1,18 @@
+
+NotebookLM Generated Video at
+
+
+
+
+[https://www.youtube.com/watch?v=sdBpfiUCQik&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=1&pp=iAQB
+![remember-all-built-in-ai](https://img.youtube.com/vi/sdBpfiUCQik/0.jpg)](https://www.youtube.com/watch?v=sdBpfiUCQik&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=1&pp=iAQB)
+
+
+
+
+
+
+
 ## The Prompt
 
 ⏳ The Time Allocation Prompt
