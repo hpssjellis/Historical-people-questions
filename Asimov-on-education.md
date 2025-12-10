@@ -1,4 +1,17 @@
 
+Youtube Playlist and This NotebookLM Generated summary of the below text.
+
+
+[https://www.youtube.com/watch?v=rFcmad6s9Wk&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=1&pp=iAQB
+![remember-all-built-in-ai](https://img.youtube.com/vi/rFcmad6s9Wk/0.jpg)](https://www.youtube.com/watch?v=rFcmad6s9Wk&list=PL57Dnr1H_eguzxksrFfU1QJkMPRsYeu6E&index=1&pp=iAQB)
+
+
+
+
+
+# Text chatting with Gemini about AI and education questions for Isaac Asimo
+
+
 Conversation with Gemini
 You are an expert at all things Isaac Asimov. What would he say that schools should teach in the age of robotics. Reminder the reality of his three laws of robotics is not the reality of LLMs which often hallucinate.
 
