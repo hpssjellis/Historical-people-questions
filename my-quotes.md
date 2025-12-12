@@ -122,3 +122,24 @@ Excellence is the combined sum of all the minutes you choose the habit of doing 
 
 
 
+
+## 🌟 Comparison to Famous Historical & Present Quotes
+
+| Your Quote (Mr. Ellis) | Core Message | Historical/Present Figure Comparison | Their Quote |
+| :--- | :--- | :--- | :--- |
+| **"If you’re not planning your future, then someone else is."** | Responsibility for self-determination. | **Winston Churchill** (Political/Action) | "The price of greatness is responsibility." |
+| **"Either do the hard work and create your life or accept what others determine is best for you."** | The choice between effort and external control. | **Marcus Aurelius** (Philosophical) | "Our life is what our thoughts make it." (Focus on internal control) |
+| **"Success doesn't come to you, you go to it.”** | Success requires action. | **Thomas Edison** (Innovation/Work Ethic) | **“Opportunity is missed by most people because it is dressed in overalls and looks like work.”** |
+| **"You are not your IQ, you are what you do."** | Action defines character, not raw potential. | **Martin Luther King Jr.** (Civil Rights/Character) | "The ultimate measure of a man is not where he stands in moments of comfort and convenience, but where he stands at times of challenge and controversy." |
+| **"If you want something, you must experience the pain of practice or the pain of regret.”** | The necessity of enduring discomfort for growth. | **Theodore Roosevelt** (Grit/Perseverance) | "Nothing in the world is worth having or worth doing unless it means effort, pain, difficulty..." |
+| **"We are in part the cumulative sum of our past decisions."** | Life as an accumulation of choices. | **Aristotle** (Philosophical/Ethics) | "We are what we repeatedly do. Excellence, then, is not an act, but a habit." |
+| **"If you enjoy the process of working, is it really work?”** | Finding joy and purpose in effort. | **Confucius** (Wisdom/Work) | "Choose a job you love, and you will never have to work a day in your life." |
+| **"The blurred image around your cell phone is called LIFE!”** | A sharp critique of digital distraction. | **Henry David Thoreau** (Simplicity/Focus) | "Our life is frittered away by detail. Simplify, simplify." |
+| **"Artificial Intelligence will allow people to learn anything they want to or nothing at all."** | The double-edged sword of advanced technology. | **Albert Einstein** (Science/Innovation) | "It has become appallingly obvious that our technology has exceeded our humanity." |
+| **"Screen Time: More Active Learning, Less Passive Observing."** | An educational call for engagement over passivity. | **Neil Gaiman** (Creativity/Doing) | **“If you're making mistakes it means you're out there doing something.”** |
+| **"Everyone needs to monitor their anxiety balance: Too little anxiety is dangerous, too much anxiety is smothering."** | The idea of anxiety as a necessary motivational force. | **Brené Brown** (Vulnerability/Emotion) | "We can choose courage or we can choose comfort, but we can't have both." |
+| **"Manifestation is the chatty sibling of confidence."** | Connecting self-talk to genuine self-belief. | **Oprah Winfrey** (Motivation/Self-help) | "The biggest adventure you can take is to live the life of your dreams." |
+| **"Find someone smarter and nicer than you.”** | Practical advice on mentorship and forming beneficial relationships. | **Jim Rohn** (Business/Motivation) | "You are the average of the five people you spend the most time with." |
+
+
+
