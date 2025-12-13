@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>keyfreemusic Statistical Melody Generator</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9;">
+
+    <h2 style="color: #333; text-align: center;">Statistical Melody Generator (keyfreemusic)</h2>
+    <p style="text-align: center;">Root Note: C (0). The generator predicts the next note based on statistical likelihoods.</p>
+
+    <div id="myControlsDiv" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px; text-align: center;">
+        <label for="myNote1Input">Start Note 1 (C, D, E...):</label>
+        <input type="text" id="myNote1Input" value="C" style="width: 40px; text-align: center; margin-right: 15px; text-transform: uppercase;">
+        
+        <label for="myNote2Input">Start Note 2 (C, D, E...):</label>
+        <input type="text" id="myNote2Input" value="E" style="width: 40px; text-align: center; margin-right: 20px; text-transform: uppercase;">
+
+        <a href="#" onclick="myStartMelodyGeneration(); return false;" style="padding: 8px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Start Melody</a>
+        <a href="#" onclick="myGenerateNextNote(); return false;" style="padding: 8px 15px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px; margin-left: 10px;">Generate Next Note</a>
+        <a href="#" onclick="myPlayMelody(); return false;" style="padding: 8px 15px; background-color: #ff9800; color: white; text-decoration: none; border-radius: 4px; margin-left: 10px;">Play Melody</a>
+    </div>
+
+    <div id="myMelodyContainer" style="padding: 15px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Current Melody (keyfreemusic format):</h3>
+        <div id="myMelodyDisplay" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 50px;">
+            </div>
+    </div>
+
+    <script>
+        // Global variables following user preference
+        let myAudioContext;
+        let myMelodyData = []; // Array to store melody notes (e.g., ['0', '4', '2'])
+        const myNoteMap = { // Maps regular notation to keyfreemusic and MIDI value (for C4=60)
+            'C': { key: '0', midi: 60 },
+            'D': { key: '2', midi: 62 },
+            'E': { key: '4', midi: 64 },
+            'F': { key: '5', midi: 65 },
+            'G': { key: '7', midi: 67 },
+            'A': { key: '9', midi: 69 },
+            'B': { key: '*', midi: 71 },
+        };
+        const myKeyMap = { // Maps keyfreemusic back to MIDI value
+            '0': 60, '2': 62, '4': 64, '5': 65, '7': 67, '9': 69, '*': 71,
+            '0\'': 72, '2\'': 74, '4\'': 76, '5\'': 77, '7\'': 79, '9\'': 81, '*\'': 83,
+            '0,': 48, '2,': 50, '4,': 52, '5,': 53, '7,': 55, '9,': 57, '*,': 59,
+        };
+        const myScaleNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
+        // Statistical transition chart (simplified from the markdown table)
+        // Key: 'Note1Note2' -> 'NextNote'
+        const myStatisticalTransitions = {
+            'CC': 'D', 'CD': 'E', 'CE': 'D', 'CF': 'E', 'CG': 'F', 'CA': 'G', 'CB': 'C\'',
+            'DC': 'B', 'DD': 'E', 'DE': 'F', 'DF': 'E', 'DG': 'F', 'DA': 'G', 'DB': 'C\'',
+            'EC': 'D', 'ED': 'C', 'EE': 'D', 'EF': 'G', 'EG': 'F', 'EA': 'G', 'EB': 'A',
+            'FC': 'D', 'FD': 'E', 'FE': 'D', 'FF': 'E', 'FG': 'A', 'FA': 'G', 'FB': 'A',
+            'GC': 'D', 'GD': 'E', 'GE': 'D', 'GF': 'E', 'GG': 'F', 'GA': 'G', 'GB': 'C\'',
+            'AC': 'B', 'AD': 'E', 'AE': 'D', 'AF': 'E', 'AG': 'F', 'AA': 'G', 'AB': 'C\'',
+            'BC': 'D\'', 'BD': 'C\'', 'BE': 'D', 'BF': 'E', 'BG': 'F', 'BA': 'G', 'BB': 'C\'',
+        };
+
+        // --- Core Music Functions ---
+
+        /** Converts a MIDI note number to its frequency in Hertz. */
+        const myMidiToFreq = (myMidi) => 440 * Math.pow(2, (myMidi - 69) / 12);
+
+        /** Plays a single note using a simple oscillator. */
+        const myPlayNote = async (myMidi, myDurationSec = 0.2) => {
+            if (!myAudioContext) {
+                myAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const myOscillator = myAudioContext.createOscillator();
+            const myGainNode = myAudioContext.createGain();
+
+            myOscillator.type = 'triangle'; // Pleasant-sounding waveform
+            myOscillator.frequency.setValueAtTime(myMidiToFreq(myMidi), myAudioContext.currentTime);
+
+            // Simple Attack-Decay-Sustain-Release (ADSR) envelope
+            const myNow = myAudioContext.currentTime;
+            myGainNode.gain.setValueAtTime(0, myNow);
+            myGainNode.gain.linearRampToValueAtTime(0.5, myNow + 0.01); // Attack
+            myGainNode.gain.linearRampToValueAtTime(0.3, myNow + 0.05); // Decay
+            myGainNode.gain.exponentialRampToValueAtTime(0.0001, myNow + myDurationSec); // Release
+
+            myOscillator.connect(myGainNode);
+            myGainNode.connect(myAudioContext.destination);
+
+            myOscillator.start(myNow);
+            myOscillator.stop(myNow + myDurationSec);
+
+            // Wait for the note to finish playing
+            await new Promise(resolve => setTimeout(resolve, myDurationSec * 1000));
+        };
+
+        /** Plays the current melody sequence. */
+        const myPlayMelody = async () => {
+            const myNotes = myMelodyData;
+            for (const myKeyNote of myNotes) {
+                const myPitchClass = myKeyNote.replace(/['",]/g, '');
+                let myOctave = 0; // C4
+                if (myKeyNote.includes(',')) myOctave = -12; // C3
+                if (myKeyNote.includes('\'')) myOctave = 12; // C5
+
+                // Find the base MIDI value for the pitch-class (0, 2, 4...)
+                const myBaseMidi = myKeyMap[myPitchClass] || myKeyMap[myPitchClass.replace(/['",]/g, '')]; 
+                if (myBaseMidi) {
+                    const myMidi = myBaseMidi + myOctave;
+                    await myPlayNote(myMidi, 0.3); // Note duration
+                }
+            }
+        };
+
+        // --- Melody Generation & Display Functions ---
+
+        /** Generates the next note based on the last two notes and statistical likelihood. */
+        const myGetNextStatisticalNote = (myNote1, myNote2) => {
+            // Remove octave notation for lookup, and convert to uppercase for key
+            const myN1 = myNote1.replace(/['",]/g, '').toUpperCase(); 
+            const myN2 = myNote2.replace(/['",]/g, '').toUpperCase(); 
+
+            const myKey = myN1 + myN2;
+            let myNextNote = myStatisticalTransitions[myKey];
+            
+            // --- Randomization and Loop Check (Small amount of backup randomization) ---
+            const myRandomChance = 0.1; // 10% chance to override stat prediction
+
+            // Simple loop detection: check if the last 4 notes repeat a two-note pattern (e.g., C-D-C-D)
+            const myLen = myMelodyData.length;
+            const myIsLooping = (myLen >= 4 && myMelodyData[myLen - 4] === myMelodyData[myLen - 2] && myMelodyData[myLen - 3] === myMelodyData[myLen - 1]);
+            
+            // Randomize if looping is detected OR based on random chance
+            if (myIsLooping || Math.random() < myRandomChance) {
+                console.log("Randomizing next note to break pattern or due to chance.");
+                
+                // Choose a random note by step (up or down 1 or 2 steps)
+                const myCurrentIndex = myScaleNotes.indexOf(myN2);
+                if (myCurrentIndex !== -1) {
+                    const myPossibleSteps = [-2, -1, 1, 2].filter(s => {
+                        const myNewIndex = myCurrentIndex + s;
+                        return myNewIndex >= 0 && myNewIndex < myScaleNotes.length;
+                    });
+                    
+                    if (myPossibleSteps.length > 0) {
+                        const myStep = myPossibleSteps[Math.floor(Math.random() * myPossibleSteps.length)];
+                        myNextNote = myScaleNotes[myCurrentIndex + myStep];
+                    }
+                }
+            }
+
+            // Simple octave decision (mostly stay in the same octave, jump to C' only from B)
+            if (myNextNote === 'C\'') {
+                return myNoteMap[myNextNote.slice(0, 1)].key + '\''; // Returns 0'
+            }
+            // All other notes are assumed to be in the base octave
+            return myNoteMap[myNextNote].key; 
+        };
+
+        /** Updates the visual display of the melody. */
+        const myUpdateMelodyDisplay = () => {
+            const myDisplayDiv = document.getElementById('myMelodyDisplay');
+            myDisplayDiv.innerHTML = ''; // Clear existing notes
+
+            myMelodyData.forEach((myNoteKey, myIndex) => {
+                const myNoteSpan = document.createElement('div');
+                myNoteSpan.style.cssText = `
+                    border: 1px solid #000; 
+                    padding: 5px 8px; 
+                    background-color: ${myIndex < 2 ? '#e0f7fa' : '#c8e6c9'};
+                    cursor: pointer;
+                    user-select: none;
+                `;
+                myNoteSpan.innerHTML = myNoteKey;
+                myNoteSpan.title = `Click to edit note ${myIndex + 1}`;
+                
+                // Static link for editing:
+                myNoteSpan.onclick = () => myStartNoteEdit(myIndex, myNoteSpan); 
+                
+                myDisplayDiv.appendChild(myNoteSpan);
+            });
+        };
+
+        /** Starts a new melody based on user input. */
+        const myStartMelodyGeneration = () => {
+            const myN1 = document.getElementById('myNote1Input').value.toUpperCase();
+            const myN2 = document.getElementById('myNote2Input').value.toUpperCase();
+
+            if (myNoteMap[myN1] && myNoteMap[myN2]) {
+                myMelodyData = [myNoteMap[myN1].key, myNoteMap[myN2].key];
+                myUpdateMelodyDisplay();
+            } else {
+                alert('Please enter valid notes (C, D, E, F, G, A, B).');
+            }
+        };
+
+        /** Generates and appends the next statistical note. */
+        const myGenerateNextNote = () => {
+            if (myMelodyData.length < 2) {
+                alert('Please start the melody first (need at least two notes).');
+                return;
+            }
+
+            // Get the last two notes (in their regular notation form for the lookup keys)
+            const myLastIndex = myMelodyData.length - 1;
+            const mySecondToLastKey = myMelodyData[myLastIndex - 1];
+            const myLastKey = myMelodyData[myLastIndex];
+            
+            // Reverse map the keyfreemusic note back to regular notation for the statistical lookup
+            const myMapReverse = Object.values(myNoteMap).reduce((acc, { key, midi }, idx) => {
+                const noteName = myScaleNotes[idx];
+                acc[key] = noteName;
+                acc[key + '\''] = noteName + '\''; // Handle octaves for lookup
+                return acc;
+            }, {});
+
+            const myNote1 = myMapReverse[mySecondToLastKey] || 'C'; // Default to 'C' if invalid
+            const myNote2 = myMapReverse[myLastKey] || 'E'; // Default to 'E' if invalid
+            
+            const myNextKeyfreemusicNote = myGetNextStatisticalNote(myNote1, myNote2);
+            
+            myMelodyData.push(myNextKeyfreemusicNote);
+            myUpdateMelodyDisplay();
+        };
+
+        /** Replaces the clicked note with a user-provided value. */
+        const myStartNoteEdit = (myIndex, myNoteElement) => {
+            const myNewKeyfreemusicNote = prompt(`Enter new note for position ${myIndex + 1} (keyfreemusic format: 0, 2, 4, *, 0', etc.). Current: ${myMelodyData[myIndex]}`);
+            
+            if (myNewKeyfreemusicNote !== null && myNewKeyfreemusicNote.trim() !== "") {
+                // Simple validation check: ensure it matches a known keyfreemusic pitch class
+                const myPitchClass = myNewKeyfreemusicNote.replace(/['",]/g, '');
+                
+                // Check if the pitch class is a valid keyfreemusic symbol (0-9, @, *)
+                if (myPitchClass.match(/^[0-9@*]$/)) { 
+                    myMelodyData[myIndex] = myNewKeyfreemusicNote.trim();
+                    myUpdateMelodyDisplay();
+
+                    // If the user changed one of the last two notes, ask if they want to regenerate the next one
+                    if (myIndex === myMelodyData.length - 1 || myIndex === myMelodyData.length - 2) {
+                        if (confirm('You changed one of the last two notes. Would you like to generate the next note based on this change?')) {
+                            myGenerateNextNote();
+                        }
+                    }
+                } else {
+                    alert('Invalid keyfreemusic format. Please use 0-9, @, * for pitch class, and \' or , for octave.');
+                }
+            }
+        };
+
+        // Initialize the app on load
+        window.onload = () => {
+            myStartMelodyGeneration(); // Start with the default C-E
+        };
+    </script>
+
+</body>
+</html>
