@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>keyfreemusic Statistical Melody Generator V2</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9;">
+
+    <h2 style="color: #333; text-align: center;">Statistical Melody Generator (keyfreemusic)</h2>
+    <p style="text-align: center;">Root Note: C (0). The generator predicts the next note based on statistical likelihoods.</p>
+
+    <div id="myControlsDiv" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px; text-align: center;">
+        <label for="myNote1Input">Start Note 1 (C, D, E...):</label>
+        <input type="text" id="myNote1Input" value="C" style="width: 40px; text-align: center; margin-right: 15px; text-transform: uppercase;">
+        
+        <label for="myNote2Input">Start Note 2 (C, D, E...):</label>
+        <input type="text" id="myNote2Input" value="E" style="width: 40px; text-align: center; margin-right: 20px; text-transform: uppercase;">
+
+        <a href="#" onclick="myStartMelodyGeneration(); return false;" style="padding: 8px 15px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Start/Reset Melody</a>
+        <a href="#" onclick="myGenerateNextNote(); return false;" style="padding: 8px 15px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px; margin-left: 10px;">Generate Next Note</a>
+        <a href="#" onclick="myPlayMelody(); return false;" style="padding: 8px 15px; background-color: #ff9800; color: white; text-decoration: none; border-radius: 4px; margin-left: 10px;">Play Melody</a>
+    </div>
+
+    <div id="myStorageDiv" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px;">
+        <h4 style="margin-top: 0; display: inline-block;">Save/Load Melody:</h4>
+        <input type="text" id="mySongName" placeholder="Enter Song Name" style="width: 150px; margin-right: 10px;">
+        <a href="#" onclick="mySaveMelody(); return false;" style="padding: 6px 12px; background-color: #607D8B; color: white; text-decoration: none; border-radius: 4px;">Save</a>
+        <a href="#" onclick="myLoadMelody(); return false;" style="padding: 6px 12px; background-color: #795548; color: white; text-decoration: none; border-radius: 4px; margin-left: 5px;">Load</a>
+        <a href="#" onclick="myLoadFromFileFormat(); return false;" style="padding: 6px 12px; background-color: #009688; color: white; text-decoration: none; border-radius: 4px; margin-left: 10px;">Load from Text Format</a>
+    </div>
+
+    <div id="myMelodyContainer" style="padding: 15px; border: 1px solid #ccc; background-color: #fff; border-radius: 8px;">
+        <h3 style="margin-top: 0;">Current Melody:</h3>
+        
+        <div id="myKeyfreeDisplay" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 50px; margin-bottom: 10px;">
+            <strong style="width: 100%; margin-bottom: 5px;">keyfreemusic:</strong>
+        </div>
+        <div id="myRegularDisplay" style="display: flex; flex-wrap: wrap; gap: 10px; min-height: 50px;">
+            <strong style="width: 100%; margin-bottom: 5px;">Regular Notes:</strong>
+        </div>
+    </div>
+
+    <script>
+        // Global variables following user preference
+        let myAudioContext;
+        let myMelodyData = []; // Stores notes as objects: { key: '0', duration: 1 }
+        const myScaleNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
+        // Comprehensive map (includes octaves for conversion)
+        const myNoteMap = { 
+            'C': { key: '0', midi: 60 }, 'C\'': { key: '0\'', midi: 72 }, 'C,': { key: '0,', midi: 48 },
+            'D': { key: '2', midi: 62 }, 'D\'': { key: '2\'', midi: 74 }, 'D,': { key: '2,', midi: 50 },
+            'E': { key: '4', midi: 64 }, 'E\'': { key: '4\'', midi: 76 }, 'E,': { key: '4,', midi: 52 },
+            'F': { key: '5', midi: 65 }, 'F\'': { key: '5\'', midi: 77 }, 'F,': { key: '5,', midi: 53 },
+            'G': { key: '7', midi: 67 }, 'G\'': { key: '7\'', midi: 79 }, 'G,': { key: '7,', midi: 55 },
+            'A': { key: '9', midi: 69 }, 'A\'': { key: '9\'', midi: 81 }, 'A,': { key: '9,', midi: 57 },
+            'B': { key: '*', midi: 71 }, 'B\'': { key: '*\'', midi: 83 }, 'B,': { key: '*,', midi: 59 },
+        };
+
+        // Reverse map for keyfreemusic to Regular Note and MIDI
+        const myKeyfreeMap = {};
+        for (const myRegNote in myNoteMap) {
+            myKeyfreeMap[myNoteMap[myRegNote].key] = {
+                regNote: myRegNote,
+                midi: myNoteMap[myRegNote].midi
+            };
+        }
+
+        // Statistical transition chart (same as V1, using pitch class only)
+        const myStatisticalTransitions = {
+            'CC': 'D', 'CD': 'E', 'CE': 'D', 'CF': 'E', 'CG': 'F', 'CA': 'G', 'CB': 'C\'',
+            'DC': 'B', 'DD': 'E', 'DE': 'F', 'DF': 'E', 'DG': 'F', 'DA': 'G', 'DB': 'C\'',
+            'EC': 'D', 'ED': 'C', 'EE': 'D', 'EF': 'G', 'EG': 'F', 'EA': 'G', 'EB': 'A',
+            'FC': 'D', 'FD': 'E', 'FE': 'D', 'FF': 'E', 'FG': 'A', 'FA': 'G', 'FB': 'A',
+            'GC': 'D', 'GD': 'E', 'GE': 'D', 'GF': 'E', 'GG': 'F', 'GA': 'G', 'GB': 'C\'',
+            'AC': 'B', 'AD': 'E', 'AE': 'D', 'AF': 'E', 'AG': 'F', 'AA': 'G', 'AB': 'C\'',
+            'BC': 'D\'', 'BD': 'C\'', 'BE': 'D', 'BF': 'E', 'BG': 'F', 'BA': 'G', 'BB': 'C\'',
+        };
+
+        // --- Core Music Functions ---
+
+        const myMidiToFreq = (myMidi) => 440 * Math.pow(2, (myMidi - 69) / 12);
+
+        /** Plays a single note object { key, duration } */
+        const myPlayNote = async (myNoteObj) => {
+            const myDurationSec = 0.3 * myNoteObj.duration; // Base duration * duration multiplier
+            
+            if (!myAudioContext) {
+                myAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const myNoteData = myKeyfreeMap[myNoteObj.key];
+            if (!myNoteData) return; // Skip invalid notes
+
+            const myOscillator = myAudioContext.createOscillator();
+            const myGainNode = myAudioContext.createGain();
+
+            myOscillator.type = 'triangle';
+            myOscillator.frequency.setValueAtTime(myMidiToFreq(myNoteData.midi), myAudioContext.currentTime);
+
+            const myNow = myAudioContext.currentTime;
+            myGainNode.gain.setValueAtTime(0, myNow);
+            myGainNode.gain.linearRampToValueAtTime(0.5, myNow + 0.01); 
+            myGainNode.gain.linearRampToValueAtTime(0.3, myNow + 0.05); 
+            myGainNode.gain.exponentialRampToValueAtTime(0.0001, myNow + myDurationSec); 
+
+            myOscillator.connect(myGainNode);
+            myGainNode.connect(myAudioContext.destination);
+
+            myOscillator.start(myNow);
+            myOscillator.stop(myNow + myDurationSec);
+
+            await new Promise(resolve => setTimeout(resolve, myDurationSec * 1000));
+        };
+
+        /** Plays the current melody sequence. */
+        const myPlayMelody = async () => {
+            for (const myNoteObj of myMelodyData) {
+                await myPlayNote(myNoteObj);
+            }
+        };
+
+        // --- Utility Conversion Functions ---
+
+        /** Converts keyfreemusic key (e.g., '0', '4') to its Pitch Class (e.g., 'C', 'E') without octave. */
+        const myKeyToPitchClass = (myKey) => {
+            const myData = myKeyfreeMap[myKey];
+            if (!myData) return '';
+            // Strip octave notation (e.g., 'C\'' -> 'C')
+            return myData.regNote.replace(/['",]/g, '').toUpperCase();
+        };
+
+        // --- Melody Generation & Display Functions ---
+
+        /** Generates the next note based on the last two notes and statistical likelihood. */
+        const myGetNextStatisticalNote = () => {
+            const myLen = myMelodyData.length;
+            if (myLen < 2) return null;
+
+            // Get the last two notes' keyfreemusic values
+            const mySecondToLastKey = myMelodyData[myLen - 2].key;
+            const myLastKey = myMelodyData[myLen - 1].key;
+            
+            // Convert to Pitch Class for statistical lookup (e.g., '0' -> 'C', '*\' -> 'B')
+            const myN1 = myKeyToPitchClass(mySecondToLastKey);
+            const myN2 = myKeyToPitchClass(myLastKey);
+
+            const myKey = myN1 + myN2;
+            let myNextRegNote = myStatisticalTransitions[myKey];
+            
+            // Randomization and Loop Check (same as V1)
+            const myRandomChance = 0.1;
+            const myIsLooping = (myLen >= 4 && myMelodyData[myLen - 4].key === myMelodyData[myLen - 2].key && myMelodyData[myLen - 3].key === myMelodyData[myLen - 1].key);
+            
+            if (myIsLooping || Math.random() < myRandomChance) {
+                console.log("Randomizing next note to break pattern or due to chance.");
+                const myCurrentIndex = myScaleNotes.indexOf(myN2);
+                if (myCurrentIndex !== -1) {
+                    const myPossibleSteps = [-2, -1, 1, 2].filter(s => {
+                        const myNewIndex = myCurrentIndex + s;
+                        return myNewIndex >= 0 && myNewIndex < myScaleNotes.length;
+                    });
+                    if (myPossibleSteps.length > 0) {
+                        const myStep = myPossibleSteps[Math.floor(Math.random() * myPossibleSteps.length)];
+                        myNextRegNote = myScaleNotes[myCurrentIndex + myStep];
+                    }
+                }
+            }
+
+            // Simple octave decision (C' only from B, otherwise base octave)
+            if (myNextRegNote === 'C\'') {
+                return myNoteMap['C\''].key; // Returns 0'
+            }
+            return myNoteMap[myNextRegNote].key; 
+        };
+
+        /** Updates the visual display of the melody (dual display). */
+        const myUpdateMelodyDisplay = () => {
+            const myKeyfreeDiv = document.getElementById('myKeyfreeDisplay');
+            const myRegularDiv = document.getElementById('myRegularDisplay');
+            
+            // Clear existing content while keeping the strong tag
+            myKeyfreeDiv.innerHTML = '<strong style="width: 100%; margin-bottom: 5px;">keyfreemusic:</strong>';
+            myRegularDiv.innerHTML = '<strong style="width: 100%; margin-bottom: 5px;">Regular Notes:</strong>';
+
+            myMelodyData.forEach((myNoteObj, myIndex) => {
+                const myRegNote = myKeyfreeMap[myNoteObj.key] ? myKeyfreeMap[myNoteObj.key].regNote : 'N/A';
+                
+                // Determine background based on duration
+                const myBgColor = myNoteObj.duration === 1 ? '#c8e6c9' : '#FFF59D'; // Highlight extended note
+                const myBorderColor = myIndex < 2 ? '#0288d1' : '#000'; // Highlight starting notes
+
+                // keyfreemusic Span
+                const myKeyfreeSpan = document.createElement('div');
+                myKeyfreeSpan.style.cssText = `
+                    border: 1px solid ${myBorderColor}; 
+                    padding: 5px 8px; 
+                    background-color: ${myBgColor};
+                    cursor: pointer;
+                    user-select: none;
+                `;
+                myKeyfreeSpan.innerHTML = myNoteObj.key + (myNoteObj.duration > 1 ? ` (x${myNoteObj.duration})` : '');
+                myKeyfreeSpan.title = `Click to edit/delete. Right-click/Long-press to change duration. Note: ${myRegNote}`;
+                
+                // Regular Note Span (read-only for display)
+                const myRegularSpan = document.createElement('div');
+                myRegularSpan.style.cssText = `
+                    border: 1px solid ${myBorderColor}; 
+                    padding: 5px 8px; 
+                    background-color: ${myBgColor};
+                    text-align: center;
+                    font-weight: bold;
+                `;
+                myRegularSpan.innerHTML = myRegNote;
+
+                // Add event listeners
+                myKeyfreeSpan.onclick = () => myStartNoteEdit(myIndex);
+                myKeyfreeSpan.oncontextmenu = (e) => {
+                    e.preventDefault(); // Prevent browser context menu
+                    myToggleNoteDuration(myIndex);
+                };
+                
+                myKeyfreeDiv.appendChild(myKeyfreeSpan);
+                myRegularDiv.appendChild(myRegularSpan);
+            });
+        };
+
+        /** Toggle the duration multiplier of a note (1 or 2). */
+        const myToggleNoteDuration = (myIndex) => {
+            myMelodyData[myIndex].duration = myMelodyData[myIndex].duration === 1 ? 2 : 1;
+            myUpdateMelodyDisplay();
+        };
+
+        /** Starts a new melody based on user input. */
+        const myStartMelodyGeneration = () => {
+            const myN1 = document.getElementById('myNote1Input').value.toUpperCase();
+            const myN2 = document.getElementById('myNote2Input').value.toUpperCase();
+
+            if (myNoteMap[myN1] && myNoteMap[myN2]) {
+                myMelodyData = [
+                    { key: myNoteMap[myN1].key, duration: 1 },
+                    { key: myNoteMap[myN2].key, duration: 1 }
+                ];
+                myUpdateMelodyDisplay();
+            } else {
+                alert('Please enter valid notes (C, D, E, F, G, A, B).');
+            }
+        };
+
+        /** Generates and appends the next statistical note. */
+        const myGenerateNextNote = () => {
+            if (myMelodyData.length < 2) {
+                alert('Please start the melody first (need at least two notes).');
+                return;
+            }
+            
+            const myNextKey = myGetNextStatisticalNote();
+            myMelodyData.push({ key: myNextKey, duration: 1 });
+            myUpdateMelodyDisplay();
+        };
+
+        /** Handles note replacement or deletion starting from a point. */
+        const myStartNoteEdit = (myIndex) => {
+            const myCurrentNoteKey = myMelodyData[myIndex].key;
+            
+            const myNewKey = prompt(`Note position ${myIndex + 1} is '${myCurrentNoteKey}'.\n\nEnter NEW keyfreemusic note (0, 2, *, 0', etc.)\n\n- OR - \nEnter 'DELETE' to remove this note and all subsequent notes.`);
+
+            if (myNewKey === null) {
+                return; // User cancelled
+            }
+
+            if (myNewKey.trim().toUpperCase() === 'DELETE') {
+                if (confirm(`Are you sure you want to delete note ${myIndex + 1} and everything after it?`)) {
+                    myMelodyData.splice(myIndex, myMelodyData.length - myIndex); // Delete from index to end
+                    myUpdateMelodyDisplay();
+                }
+                return;
+            }
+
+            // --- Note Replacement Logic ---
+            const myTrimmedKey = myNewKey.trim();
+            // Basic validation check (must map to a known keyfreemusic note)
+            if (myKeyfreeMap[myTrimmedKey]) {
+                myMelodyData[myIndex].key = myTrimmedKey;
+                myUpdateMelodyDisplay();
+                
+                // If the user changed one of the last two notes, offer to re-generate the next one
+                if (myMelodyData.length >= 2 && myIndex >= myMelodyData.length - 2) {
+                    if (confirm('You changed one of the last two driving notes. Would you like to generate the next note based on this new sequence?')) {
+                        myGenerateNextNote();
+                    }
+                }
+            } else {
+                alert(`Invalid keyfreemusic note: '${myTrimmedKey}'. Please use a valid symbol (0, 2, *, 0', etc.).`);
+            }
+        };
+
+        // --- Save/Load Functions ---
+
+        /** Saves the current melody to Local Storage. */
+        const mySaveMelody = () => {
+            const mySongName = document.getElementById('mySongName').value.trim();
+            if (!mySongName) {
+                alert('Please enter a name for the song.');
+                return;
+            }
+            try {
+                // Store the structured data as a JSON string
+                localStorage.setItem(`keyfree_melody_${mySongName}`, JSON.stringify(myMelodyData));
+                alert(`Melody '${mySongName}' saved successfully!`);
+            } catch (e) {
+                alert('Error saving melody. Local storage may be full or unavailable.');
+            }
+        };
+
+        /** Loads a melody from Local Storage. */
+        const myLoadMelody = () => {
+            const mySongName = document.getElementById('mySongName').value.trim();
+            if (!mySongName) {
+                alert('Please enter the name of the song to load.');
+                return;
+            }
+            const mySavedData = localStorage.getItem(`keyfree_melody_${mySongName}`);
+            if (mySavedData) {
+                myMelodyData = JSON.parse(mySavedData);
+                myUpdateMelodyDisplay();
+                alert(`Melody '${mySongName}' loaded successfully!`);
+            } else {
+                alert(`Melody '${mySongName}' not found.`);
+            }
+        };
+        
+        /** Loads a melody from a plain text string provided by the user (keyfreemusic or regular). */
+        const myLoadFromFileFormat = () => {
+            const myInput = prompt("Paste your melody string here (keyfreemusic: 0 4 7 9 or Regular: C E G A, separated by spaces):");
+            if (myInput === null || myInput.trim() === "") return;
+
+            const myNotesArray = myInput.trim().split(/\s+/); // Split by one or more spaces
+            const myNewMelody = [];
+
+            // Attempt to detect format (keyfreemusic or Regular)
+            // A keyfreemusic note starts with 0-9, @, or *
+            const myFirstNote = myNotesArray[0].toUpperCase();
+            const myIsKeyfree = myFirstNote.match(/^[0-9@*]/);
+            
+            let myConversionSuccess = true;
+
+            for (const myNoteString of myNotesArray) {
+                let myKey = '';
+                
+                if (myIsKeyfree) {
+                    // Keyfreemusic format: direct use
+                    myKey = myNoteString;
+                } else {
+                    // Regular Note format: convert to keyfreemusic
+                    const myNoteData = myNoteMap[myNoteString.toUpperCase()];
+                    if (myNoteData) {
+                        myKey = myNoteData.key;
+                    } else {
+                        myConversionSuccess = false;
+                        break;
+                    }
+                }
+                
+                if (myKeyfreeMap[myKey]) {
+                    myNewMelody.push({ key: myKey, duration: 1 });
+                } else {
+                    myConversionSuccess = false;
+                    break;
+                }
+            }
+
+            if (myConversionSuccess && myNewMelody.length >= 2) {
+                myMelodyData = myNewMelody;
+                myUpdateMelodyDisplay();
+                alert(`Melody loaded successfully in ${myIsKeyfree ? 'keyfreemusic' : 'Regular Note'} format!`);
+            } else {
+                alert("Failed to load melody. Check the format, and ensure at least two valid notes were provided.");
+            }
+        };
+
+        // Initialize the app on load
+        window.onload = () => {
+            // Disable context menu globally to allow right-click for duration toggle
+            document.oncontextmenu = (e) => {
+                if (!e.target.closest('#myKeyfreeDisplay')) return true; // Allow elsewhere
+                e.preventDefault();
+                return false;
+            };
+            myStartMelodyGeneration(); // Start with the default C-E
+        };
+    </script>
+
+</body>
+</html>
